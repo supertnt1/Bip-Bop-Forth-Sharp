@@ -1,0 +1,4 @@
+C:\Users\lou\Documents\Visual Studio 2010\Projects\Bip Bop Forth Sharp\Bip Bop Forth Sharp\bin\Release\Bip Bop Forth Sharp.exe
+C:\Users\lou\Documents\Visual Studio 2010\Projects\Bip Bop Forth Sharp\Bip Bop Forth Sharp\bin\Release\Bip Bop Forth Sharp.pdb
+C:\Users\lou\Documents\Visual Studio 2010\Projects\Bip Bop Forth Sharp\Bip Bop Forth Sharp\obj\x86\Release\Bip Bop Forth Sharp.exe
+C:\Users\lou\Documents\Visual Studio 2010\Projects\Bip Bop Forth Sharp\Bip Bop Forth Sharp\obj\x86\Release\Bip Bop Forth Sharp.pdb
