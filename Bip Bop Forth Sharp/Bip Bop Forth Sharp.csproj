@@ -43,6 +43,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Device.cs" />
+    <Compile Include="DiskDrive.cs" />
     <Compile Include="Forth.cs" />
     <Compile Include="functions.cs" />
     <Compile Include="Program.cs" />

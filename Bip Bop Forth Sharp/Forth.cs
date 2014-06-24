@@ -8,7 +8,7 @@ namespace Bip_Bop_Forth_Sharp
 {
     class Forth
     {
-        List<string> words = new List<string>();
+        public List<string> words = new List<string>();
         public Stack<int> fStack = new Stack<int>();
         public Stack<string> cStack = new Stack<string>();
         public List<string> currentCode = new List<string>(); //stores the current code so forth functions can use it.
@@ -19,23 +19,31 @@ namespace Bip_Bop_Forth_Sharp
             {"*",functions.fMul},
             {"/",functions.fDiv},
             {"=",functions.fEQ},
+            {"<",functions.fLT},
+            {">",functions.fGT},
             {"dup",functions.fDup},
             {".",functions.fDot},
             {"emit",functions.fEmit},
             {"cr",functions.fCR},
             {"dump",functions.fDump},
             {"create",functions.fCreate},
+            {"mcreate",functions.fMCreate},
+            
             {"!",functions.fStore},
             {"@",functions.fFetch},
+            {"rand",functions.fRand},
+            {"swap",functions.fSwap},
+            {"%",functions.fMod},
+            {"innumber",functions.fNumin},
 
+            {"PRINT",functions.fString},
             {"PUSH",functions.fPush}, //not accessible to the programmer
             {"RUN",functions.fRun},
             {"JZ",functions.fJZ},
             {"JMP",functions.fJMP},
         };
-        Dictionary<string, Func<bool>> shellDict = new Dictionary<string, Func<bool>>() //shell functions
+        Dictionary<string, Func<Forth,bool>> shellDict = new Dictionary<string, Func<Forth,bool>>() //shell functions
         {
-            {"mount",functions.sMount},
         };
         Dictionary<string,Func<List<string>,Forth,bool>> compDict = new Dictionary<string,Func<List<string>,Forth,bool>>() //compile time functions
         {
@@ -46,15 +54,44 @@ namespace Bip_Bop_Forth_Sharp
             {"if",functions.cIF},
             {"else",functions.CElse},
             {"then",functions.CThen},
+            {".\"",functions.Cstring},
+            {"\"",functions.cEndString}
         };
 
         public Dictionary<int, int> fMemory = new Dictionary<int, int>();
         public Dictionary<int, string> fMemNames = new Dictionary<int, string>();
         public Dictionary<string, List<string>> createdDict = new Dictionary<string, List<string>>();
+        Dictionary<int, Device> Devices = new Dictionary<int, Device>();
+        public Random r = new Random();
         public Forth()
         {
-            
+            Console.WriteLine("Forth interpreter V0.01");
         }
+        public void RegisterDevice(Device name, int page,int amount)
+        {
+            for (int i = page; i < page + amount;i++)
+            {
+                Devices[i] = name;
+                Devices[i].Init(this);
+                Devices[i].page = i;
+                Devices[i].amount = r.Next();
+            }
+        }
+        public Device checkPage(int memAddress)
+        {
+            Device d = null;
+            int mem = memAddress / 512;
+            if (Devices.ContainsKey(mem))
+            {
+                d = Devices[mem];
+            }
+            return d;
+        }
+        public void registerFunc(string name, Func<Forth, bool> callback)
+        {
+            shellDict.Add(name, callback);
+        }
+
         public void addWord(ref List<string> code,string name)
         {
             List<string> templist = new List<string>();
@@ -83,6 +120,7 @@ namespace Bip_Bop_Forth_Sharp
         {
             currentCode.RemoveRange(0, currentCode.Count);
         }
+
         public List<string> Compile()
         {
             emptyCompStack();
@@ -92,14 +130,21 @@ namespace Bip_Bop_Forth_Sharp
             while (true)
             {
                 string word = getWord(prmpt).ToLower();
-                Func<bool> sAct;
+                Func<Forth,bool> sAct;
                 Func<List<string>,Forth, bool> cAct;
                 shellDict.TryGetValue(word, out sAct);
                 compDict.TryGetValue(word,out cAct);
 
                 if (sAct != null)
                 {
-                    sAct.Invoke(); //word was a shell command, run it
+                    if (words.Count == 0) //shell commands must only begin at the start or the end of a forth statement
+                    {
+                        sAct.Invoke(this);
+                    }
+                    else
+                    {
+                        Console.WriteLine("Shell commands must not be in the middle of a forth statement.");
+                    }
                 }
                 else if (cAct != null)
                 {
@@ -118,20 +163,59 @@ namespace Bip_Bop_Forth_Sharp
                 {
                     if (fMemNames.ContainsValue(word)) //word could be a variable
                     {
-                        KeyValuePair<int, string> t = fMemNames.FirstOrDefault(x => x.Value == word);
-                        currentCode.Add("PUSH");
-                        currentCode.Add(t.Key.ToString());
+                        string f = "nothing";
+                        if (cStack.Count != 0)
+                        {
+                            f = cStack.Peek();
+                        }
+                        if (f == "STRING")
+                        {
+                            currentCode.Add(word);
+                        }
+                        else
+                        {
+                            KeyValuePair<int, string> t = fMemNames.FirstOrDefault(x => x.Value == word);
+                            currentCode.Add("PUSH"); //add necessary code to push it
+                            currentCode.Add(t.Key.ToString());
+                        }
                     } else {
                     
                         int t = 0;
                         if (int.TryParse(word, out t)) //word was a number push it on
                         {
-                            currentCode.Add("PUSH");
-                            currentCode.Add(word);
+                            //add the number to the code if it is in the middle of a string
+
+                            string f ="nothing";
+                            if (cStack.Count != 0)
+                            {
+                                f = cStack.Peek();
+                            }
+                            if (f == "STRING")
+                            {
+                                currentCode.Add(word);
+                            }
+                            else
+                            {
+                                currentCode.Add("PUSH");
+                                currentCode.Add(word);
+                            }
                         }
                         else
                         {
-                            Console.WriteLine("Unknown word: " + word);
+                            //add the word to the code if it is in the middle of a string
+                            string f="nothing";
+                            if (cStack.Count != 0)
+                            {
+                                f = cStack.Peek();
+                            }
+                            if (f == "STRING")
+                            {
+                                currentCode.Add(word);
+                            }
+                            else
+                            {
+                                Console.WriteLine("Unknown word: " + word);
+                            }
                         }
                     }
                 }

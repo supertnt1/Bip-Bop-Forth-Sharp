@@ -1,0 +1,21 @@
+." Loading forth base words " cr
+: squr dup * ;
+: ? @ . ;
+: randi rand swap % ;
+." added ?, squr " cr
+
+create guess
+create num
+create running
+: storeguess guess ! ;
+: game1 ." Enter a guess: " innumber storeguess 
+guess @ num @ = if 
+	." You guessed it correctly " cr 1 running !
+else
+	guess @ num @ > if ." Too high " cr 
+else
+	guess @ num @ < if ." Too low " cr then
+
+then
+  then ;
+: Playguess 0 running ! 100 randi num ! begin game1 running @ until ;
